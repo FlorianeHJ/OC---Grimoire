@@ -43,12 +43,37 @@ exports.createBook = async (req, res, next) => {
         req.file.filename
       );
 
-      await sharp(inputPath)
-        .resize({ width: 800, height: 600, fit: "inside" })
-        .webp({ quality: 80 })
-        .toFile(outputPath);
+      // Vérifier les chemins des fichiers
+      console.log("Input Path:", inputPath);
+      console.log("Output Path:", outputPath);
 
-      fs.unlinkSync(inputPath);
+      // Traitement de l'image avec sharp
+      try {
+        sharp.cache(false);
+        await sharp(inputPath)
+          .resize({ width: 800, height: 600, fit: "inside" })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+        console.log("Image optimisée et sauvegardée avec succès.");
+      } catch (error) {
+        console.error(
+          "Erreur lors du traitement de l'image avec sharp:",
+          error
+        );
+        return res
+          .status(500)
+          .json({ error: "Erreur lors du traitement de l'image" });
+      }
+
+      // Supprimer le fichier d'entrée
+      fs.unlink(inputPath, (err) => {
+        if (err) {
+          console.error(
+            "Erreur lors de la suppression du fichier d'entrée : ",
+            err
+          );
+        }
+      });
 
       req.file.filename = `optimized/${req.file.filename}`;
     }
@@ -82,14 +107,15 @@ exports.rateOneBook = (req, res, next) => {
       return res.status(400).json({ message: "Vous avez déjà noté ce livre." });
     }
 
+    book.ratings.push({ userId: userId, grade: rating });
+
     const totalRating = book.ratings.length;
     const sumRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
     book.averageRating = sumRatings / totalRating;
-
-    book.ratings.push({ userId: userId, grade: rating });
   });
 
-  Book.save()
+  book
+    .save()
     .then(() => res.status(200).json({ message: "Note ajoutée avec succès !" }))
     .catch((error) => res.status(400).json({ error }));
 };
