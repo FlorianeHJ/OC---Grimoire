@@ -61,7 +61,17 @@ exports.rateOneBook = (req, res, next) => {
     if (!book) {
       return res.status(404).json({ message: "Livre non trouvé" });
     }
-    book.rating.push({ userId: userId, grade: rating });
+
+    const existingRate = book.rating.find((r) => r.userId === userId);
+    if (existingRate) {
+      return res.status(400).json({ message: "Vous avez déjà noté ce livre." });
+    }
+
+    const totalRating = book.ratings.length;
+    const sumRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
+    book.averageRating = sumRatings / totalRating;
+
+    book.ratings.push({ userId: userId, grade: rating });
   });
   Book.save()
     .then(() => res.status(200).json({ message: "Note ajoutée avec succès !" }))
