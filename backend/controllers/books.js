@@ -29,7 +29,33 @@ exports.getOneBook = (req, res, next) => {
     });
 };
 
-exports.getBestRating = (req, res, next) => {};
+exports.getBestRating = (req, res, next) => {
+  Book.aggregate([
+    {
+      $unwind: "$ratings",
+    },
+    {
+      group: {
+        _id: "$id",
+        title: { $first: "$title" },
+        averageRating: { $avg: "$ratings.grade" },
+        imageUrl: { $first: "$imageurl" },
+      },
+    },
+    {
+      $sort: { averageRating: -1 },
+    },
+    {
+      $limit: 3,
+    },
+  ])
+    .then((books) => {
+      res.status(200).json(books);
+    })
+    .catch((error) => {
+      res.status(500).json({ error });
+    });
+};
 
 exports.createBook = async (req, res, next) => {
   try {
@@ -43,37 +69,19 @@ exports.createBook = async (req, res, next) => {
         req.file.filename
       );
 
-      // Vérifier les chemins des fichiers
-      console.log("Input Path:", inputPath);
-      console.log("Output Path:", outputPath);
-
-      // Traitement de l'image avec sharp
       try {
         sharp.cache(false);
         await sharp(inputPath)
           .resize({ width: 800, height: 600, fit: "inside" })
           .webp({ quality: 80 })
           .toFile(outputPath);
-        console.log("Image optimisée et sauvegardée avec succès.");
       } catch (error) {
-        console.error(
-          "Erreur lors du traitement de l'image avec sharp:",
-          error
-        );
         return res
           .status(500)
           .json({ error: "Erreur lors du traitement de l'image" });
       }
 
-      // Supprimer le fichier d'entrée
-      fs.unlink(inputPath, (err) => {
-        if (err) {
-          console.error(
-            "Erreur lors de la suppression du fichier d'entrée : ",
-            err
-          );
-        }
-      });
+      fs.unlink(inputPath);
 
       req.file.filename = `optimized/${req.file.filename}`;
     }
