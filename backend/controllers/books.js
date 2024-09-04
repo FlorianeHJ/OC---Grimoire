@@ -53,7 +53,20 @@ exports.createBook = (req, res, next) => {
     });
 };
 
-exports.rateOneBook = (req, res, next) => {};
+exports.rateOneBook = (req, res, next) => {
+  const userId = req.auth.userId;
+  const rating = req.body.rating;
+
+  Book.findOne({ _id: req.params.id }).then((book) => {
+    if (!book) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+    book.rating.push({ userId: userId, grade: rating });
+  });
+  Book.save()
+    .then(() => res.status(200).json({ message: "Note ajoutée avec succès !" }))
+    .catch((error) => res.status(400).json({ error }));
+};
 
 exports.modifyBook = (req, res, next) => {
   const bookObject = req.file
