@@ -73,6 +73,7 @@ exports.rateOneBook = (req, res, next) => {
 
     book.ratings.push({ userId: userId, grade: rating });
   });
+
   Book.save()
     .then(() => res.status(200).json({ message: "Note ajoutée avec succès !" }))
     .catch((error) => res.status(400).json({ error }));
