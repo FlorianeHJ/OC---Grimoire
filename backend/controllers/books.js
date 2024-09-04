@@ -1,4 +1,6 @@
 const Book = require("../models/Books");
+const sharp = require("sharp");
+const path = require("path");
 const fs = require("fs");
 
 exports.getAllBooks = (req, res, next) => {
@@ -29,28 +31,41 @@ exports.getOneBook = (req, res, next) => {
 
 exports.getBestRating = (req, res, next) => {};
 
-exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
-  console.log(req.body.book);
+exports.createBook = async (req, res, next) => {
+  try {
+    const bookObject = JSON.parse(req.body.book);
 
-  delete bookObject._id;
-  delete bookObject._userId;
-  const book = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${
-      req.file.filename
-    }`,
-  });
+    if (req.file) {
+      const inputPath = path.join(__dirname, "../images", req.file.filename);
+      const outputPath = path.join(
+        __dirname,
+        "../images/optimized",
+        req.file.filename
+      );
 
-  book
-    .save()
-    .then(() => {
-      res.status(201).json({ message: "Livre enregistré !" });
-    })
-    .catch((error) => {
-      res.status(400).json({ error });
+      await sharp(inputPath)
+        .resize({ width: 800, height: 600, fit: "inside" })
+        .webp({ quality: 80 })
+        .toFile(outputPath);
+
+      fs.unlinkSync(inputPath);
+
+      req.file.filename = `optimized/${req.file.filename}`;
+    }
+
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: `${req.protocol}://${req.get("host")}/images/${
+        req.file.filename
+      }`,
     });
+
+    await book.save();
+    res.status(201).json({ message: "Livre enregistré !" });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 exports.rateOneBook = (req, res, next) => {
