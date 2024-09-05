@@ -1,3 +1,4 @@
 node_modules
-images
+!/images/.keep-me
+!/tmp/.keep-me
 .env

@@ -74,12 +74,7 @@ exports.createBook = async (req, res, next) => {
           .resize({ width: 800, height: 600, fit: "inside" })
           .webp({ quality: 80 })
           .toFile(outputPath);
-        console.log("Image optimisée et sauvegardée avec succès.");
       } catch (error) {
-        console.error(
-          "Erreur lors du traitement de l'image avec sharp:",
-          error
-        );
         return res
           .status(500)
           .json({ error: "Erreur lors du traitement de l'image" });
