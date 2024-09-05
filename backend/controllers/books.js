@@ -35,7 +35,7 @@ exports.getBestRating = (req, res, next) => {
       $unwind: "$ratings",
     },
     {
-      group: {
+      $group: {
         _id: "$id",
         title: { $first: "$title" },
         averageRating: { $avg: "$ratings.grade" },
@@ -105,16 +105,18 @@ exports.createBook = async (req, res, next) => {
   }
 };
 
-exports.rateOneBook = (req, res, next) => {
+exports.rateOneBook = async (req, res, next) => {
   const userId = req.auth.userId;
   const rating = req.body.rating;
 
-  Book.findOne({ _id: req.params.id }).then((book) => {
+  try {
+    const book = await Book.findOne({ _id: req.params.id });
+
     if (!book) {
       return res.status(404).json({ message: "Livre non trouvé" });
     }
 
-    const existingRate = book.rating.find((r) => r.userId === userId);
+    const existingRate = book.ratings.find((r) => r.userId === userId);
     if (existingRate) {
       return res.status(400).json({ message: "Vous avez déjà noté ce livre." });
     }
@@ -124,12 +126,12 @@ exports.rateOneBook = (req, res, next) => {
     const totalRating = book.ratings.length;
     const sumRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
     book.averageRating = sumRatings / totalRating;
-  });
 
-  book
-    .save()
-    .then(() => res.status(200).json({ message: "Note ajoutée avec succès !" }))
-    .catch((error) => res.status(400).json({ error }));
+    await book.save();
+    res.status(200).json({ message: "Note ajoutée avec succès !" });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
 };
 
 exports.modifyBook = (req, res, next) => {
