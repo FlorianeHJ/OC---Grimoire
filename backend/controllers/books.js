@@ -61,13 +61,12 @@ exports.createBook = async (req, res, next) => {
   try {
     const bookObject = JSON.parse(req.body.book);
 
+    delete bookObject._id;
+    delete bookObject._userId;
+
     if (req.file) {
-      const inputPath = path.resolve(__dirname, "../images", req.file.filename);
-      const outputPath = path.resolve(
-        __dirname,
-        "../images/optimized",
-        req.file.filename
-      );
+      const inputPath = path.join(__dirname, "../tmp/", req.file.filename);
+      const outputPath = path.join(__dirname, "../images/", req.file.filename);
 
       try {
         sharp.cache(false);
@@ -86,15 +85,20 @@ exports.createBook = async (req, res, next) => {
           .json({ error: "Erreur lors du traitement de l'image" });
       }
 
-      fs.unlinkSync(inputPath);
-
-      req.file.filename = `images/optimized/${req.file.filename}`;
+      fs.unlink(inputPath, (err) => {
+        if (err) {
+          console.error(
+            "Erreur lors de la suppression de l'image temporaire:",
+            err
+          );
+        }
+      });
     }
 
     const book = new Book({
       ...bookObject,
       userId: req.auth.userId,
-      imageUrl: `${req.protocol}://${req.get("host")}images/optimized/${
+      imageUrl: `${req.protocol}://${req.get("host")}/images/${
         req.file.filename
       }`,
     });
@@ -137,7 +141,7 @@ exports.modifyBook = (req, res, next) => {
   const bookObject = req.file
     ? {
         ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get("host")}/optimized/${
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${
           req.file.filename
         }`,
       }
@@ -168,11 +172,11 @@ exports.deleteBook = (req, res, next) => {
       if (book.userId != req.auth.userId) {
         res.status(401).json({ message: "Not authorized" });
       } else {
-        const filename = book.imageUrl.split("/images/optimized/")[1];
-        fs.unlink(`images/optimized/${filename}`, () => {
+        const filename = book.imageUrl.split("/images/")[1];
+        fs.unlink(`images/${filename}`, () => {
           Book.deleteOne({ _id: req.params.id })
             .then(() => {
-              res.status(200).json({ message: "Livre supprimé !" });
+              res.status(200).json({ message: "Objet supprimé !" });
             })
             .catch((error) => res.status(401).json({ error }));
         });
