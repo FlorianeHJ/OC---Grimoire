@@ -1,6 +1,5 @@
+const { log } = require("console");
 const Book = require("../models/Books");
-const sharp = require("sharp");
-const path = require("path");
 const fs = require("fs");
 
 exports.getAllBooks = (req, res, next) => {
@@ -30,25 +29,10 @@ exports.getOneBook = (req, res, next) => {
 };
 
 exports.getBestRating = (req, res, next) => {
-  Book.aggregate([
-    {
-      $unwind: "$ratings",
-    },
-    {
-      $group: {
-        _id: "$id",
-        title: { $first: "$title" },
-        averageRating: { $avg: "$ratings.grade" },
-        imageUrl: { $first: "$imageurl" },
-      },
-    },
-    {
-      $sort: { averageRating: -1 },
-    },
-    {
-      $limit: 3,
-    },
-  ])
+  Book.find()
+    .sort({ averageRating: -1 })
+    .limit(3)
+
     .then((books) => {
       res.status(200).json(books);
     })
@@ -63,32 +47,6 @@ exports.createBook = async (req, res, next) => {
 
     delete bookObject._id;
     delete bookObject._userId;
-
-    if (req.file) {
-      const inputPath = path.join(__dirname, "../tmp/", req.file.filename);
-      const outputPath = path.join(__dirname, "../images/", req.file.filename);
-
-      try {
-        sharp.cache(false);
-        await sharp(inputPath)
-          .resize({ width: 800, height: 600, fit: "inside" })
-          .webp({ quality: 80 })
-          .toFile(outputPath);
-      } catch (error) {
-        return res
-          .status(500)
-          .json({ error: "Erreur lors du traitement de l'image" });
-      }
-
-      fs.unlink(inputPath, (err) => {
-        if (err) {
-          console.error(
-            "Erreur lors de la suppression de l'image temporaire:",
-            err
-          );
-        }
-      });
-    }
 
     const book = new Book({
       ...bookObject,
@@ -128,7 +86,7 @@ exports.rateOneBook = async (req, res, next) => {
     book.averageRating = sumRatings / totalRating;
 
     await book.save();
-    res.status(200).json({ message: "Note ajoutée avec succès !" });
+    res.status(200).json(book);
   } catch (error) {
     res.status(400).json({ error });
   }
