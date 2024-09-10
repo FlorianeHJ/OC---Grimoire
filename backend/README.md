@@ -28,3 +28,15 @@ cd oc---grimoire
 
 Installez les dépendances :
 npm install
+
+Crééez un fichier .env puis rajoutez les données suivantes :
+MONGO_URI={le lien pour vos infos de connexion de votre bdd}
+
+JWT_SECRET={votre code secret ici}
+
+// Utilisation
+
+Démarrez le serveur :
+npm start
+
+- L'application sera disponible à l'adresse http://localhost:3000.
