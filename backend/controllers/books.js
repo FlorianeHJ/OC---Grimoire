@@ -1,4 +1,3 @@
-const { log } = require("console");
 const Book = require("../models/Books");
 const fs = require("fs");
 
@@ -83,7 +82,7 @@ exports.rateOneBook = async (req, res, next) => {
 
     const totalRating = book.ratings.length;
     const sumRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
-    book.averageRating = sumRatings / totalRating;
+    book.averageRating = Math.round(sumRatings / totalRating);
 
     await book.save();
     res.status(200).json(book);
