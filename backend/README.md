@@ -21,7 +21,7 @@ Ce projet utilise les technologies suivantes :
 // Installation avec git/github
 
 Clonez le dépôt :
-git clone https://github.com/votre-utilisateur/oc---grimoire.git
+git clone https://github.com/FlorianeHJ/OC---Grimoire.git
 
 Accédez au répertoire du projet :
 cd oc---grimoire
