@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const helmet = require("helmet");
 
 require("dotenv").config();
 
@@ -18,6 +19,7 @@ mongoose
   .catch(() => console.log("Connexion à MongoDB échouée !"));
 
 app.use(express.json());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
 app.use("/images", express.static("images"));
 
@@ -31,7 +33,10 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, PATCH, OPTIONS"
   );
-  res.setHeader("Content-Security-Policy", "default-src 'self'");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; img-src 'self' data: http: https:;"
+  );
   res.setHeader("X-XSS-Protection", "1; mode=block");
   next();
 });
